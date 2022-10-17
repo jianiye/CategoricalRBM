@@ -5,7 +5,7 @@
 A restricted boltzmann machine(RBM) consists of a visible layer and a hidden layer. The two layers are fully connected. The weight tensors can be considered as energy transformation between the two layers.
 The system is in equillibirum state if the energy flow between the two layers are balanced. This also means the information flow is in equillibrium, in that state we can reconstruct visible through the weight tensors.
 
-The euillibrium state corresponds to a minimum free energy, so an RBM uses free energy $F(v)$ as the loss metric. 
+The euillibrium state corresponds to a minimum free energy, so an RBM uses free energy $F(v)$ as the loss metric.
 
 For an input Visible tensor, the weight tensors forward it to the hidden tensor, the hidden tensor backwards with the shared weight tensor to a reconstructed visible tensor.
 
@@ -15,4 +15,4 @@ Usually, a visible node is a bounoulli distributed variable, but in CategoricalR
 
 #### Training with the Movie-Lens-1M data
 
-The Movie-Lens-1M data is a sparce $N_{user}*N_{movie}$ tensor, each non-zero element has value ~[1,2,3,4,5]. The traning takes batched user tensor of size $N_{movie}*5$ as input, the zeroed valued are masked.
+The Movie-Lens-1M data is a sparce $N_{user}*N_{movie}$ tensor, each non-zero element has value ~[1,2,3,4,5]. The traning takes batched user tensor of size $N_{movie}*5$ as input, the zeroed values are masked.

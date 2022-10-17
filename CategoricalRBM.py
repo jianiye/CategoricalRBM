@@ -35,12 +35,12 @@ class CategoricalRBM(nn.Module):
 
         # from hidden to Visible
         VofH = torch.tensordot(HofV, self.W, dims = ([1],[2])) + self.b
-        refloss = self.refloss(VofH.detach(), Visible.detach()) # cross entropy loss for reference
         VofH = self.vact(VofH)
         Vcate = torch.distributions.categorical.Categorical(VofH)
         VofH = Vcate.sample()
         VofH = nn.functional.one_hot(VofH)
         Mask = torch.unsqueeze(Mask, dim=-1)
+        refloss = self.refloss(VofH.detach()*Mask.detach(), Visible.detach()) # cross entropy loss for reference
         VofH = VofH*Mask
 
         return VofH, refloss
