@@ -18,7 +18,7 @@ class CategoricalRBM(nn.Module):
         self.refloss = nn.CrossEntropyLoss()
 
 
-    def free_energy(V):
+    def free_energy(self, V):
         f1 = torch.mean(torch.tensordot(V, self.b, dims=([1,2],[0,1])))
         f2 = torch.mean(torch.sum(self.splus(torch.tensordot(V, self.W, dims=([1,2],[0,1])) + self.c), dim = 1))
         return f1 + f2
@@ -30,24 +30,24 @@ class CategoricalRBM(nn.Module):
         '''
         # from visible to hidden
         HofV = torch.tensordot(Visible, self.W, dims=([1,2],[0,1])) + self.c
-        HofV = self.act(HofV)
+        HofV = self.hact(HofV)
         HofV = torch.bernoulli(HofV)
 
         # from hidden to Visible
         VofH = torch.tensordot(HofV, self.W, dims = ([1],[2])) + self.b
-        refloss = self.refloss(VofH.detach(), V.detach()) # cross entropy loss for reference
+        refloss = self.refloss(VofH.detach(), Visible.detach()) # cross entropy loss for reference
         VofH = self.vact(VofH)
         Vcate = torch.distributions.categorical.Categorical(VofH)
         VofH = Vcate.sample()
         VofH = nn.functional.one_hot(VofH)
+        Mask = torch.unsqueeze(Mask, dim=-1)
         VofH = VofH*Mask
 
         return VofH, refloss
 
 
-
-def train_loop(model, train_dataloader, epochs=30, lr=0.05, eval_dataloader=None):
-    optimizer = torch.optim.Adam(model.parameters(), lr=lr, momentum=0.9)
+def train_loop(model, train_dataloader, epoch, lr=0.05, eval_dataloader=None):
+    optimizer = torch.optim.Adam(model.parameters(), lr=lr)
     train_loss = 0.0
     ref_loss = 0.0
     model.train()
@@ -58,8 +58,9 @@ def train_loop(model, train_dataloader, epochs=30, lr=0.05, eval_dataloader=None
             visible, mask = visible.cuda(), mask.cuda()
 
         optimizer.zero_grad()
+        visible, mask = visible.float(), mask.float()
         output, refloss = model(visible, mask)
-        loss = model.free_energy(visible) - model.free_energy(output)
+        loss = torch.abs(model.free_energy(visible) - model.free_energy(output))
         #loss = loss_func(target, labels)
         loss.backward()
         optimizer.step()
@@ -79,7 +80,7 @@ def train_loop(model, train_dataloader, epochs=30, lr=0.05, eval_dataloader=None
             valid_loss += loss.item() * len(inputs)
 
     if epoch%1==0:
-        print(f'Epoch {epoch+1} \t\t Training Loss: {train_loss, train_loss / len(train_dataloader)}')
+        print(f'Epoch {epoch+1} \t\t Training Loss: {train_loss, train_loss / len(train_dataloader)} \t\t Cross Entropy Loss: {ref_loss, ref_loss / len(train_dataloader)}')
         if eval_dataloader:
             print(f'\t\t Validation Loss: {valid_loss, valid_loss / len(eval_dataloader)}')
             if min_valid_loss > valid_loss:
